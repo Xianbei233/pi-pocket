@@ -1,3 +1,4 @@
+import { t } from "./i18n.js";
 // Pi Pocket web app. No build step: edit a file under web/ and every open browser reloads.
 import { render } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -77,8 +78,12 @@ function Topbar() {
     return html`<header class="topbar">
         <button
             class="icon-button badge-host topbar-back"
-            aria-label=${waiting > 0 ? `Back to sessions, ${waiting} waiting for you` : "Back to sessions"}
-            title="Sessions"
+            aria-label=${
+                waiting > 0
+                    ? t("Back to sessions, {{count}} waiting for you", { count: waiting })
+                    : t("Back to sessions")
+            }
+            title=${t("Sessions")}
             onClick=${toSessions}
         >
             <${Icon} name="back" size=${22} />
@@ -87,7 +92,7 @@ function Topbar() {
         <button class="title" onClick=${() => conversation && openSheet({ type: "menu" })}>
             <div class="title-main">
                 <span>
-                    ${conversation?.title ?? store.state.sessions.find((session) => session.id === store.state.conversationId)?.title ?? "Loading…"}
+                    ${conversation?.title ?? store.state.sessions.find((session) => session.id === store.state.conversationId)?.title ?? t("Loading…")}
                 </span>
             </div>
             <div class="title-sub mono">${subtitle}</div>
@@ -109,13 +114,13 @@ function Topbar() {
         <${BrowserButton} />
         <button
             class=${`icon-button badge-host ${artifacts > 0 ? "" : "quiet"}`}
-            aria-label="Artifacts"
+            aria-label=${t("Artifacts")}
             onClick=${() => openSheet({ type: "artifacts" })}
         >
             <${Icon} name="artifact" />
             ${artifacts > 0 && html`<span class="badge">${artifacts}</span>`}
         </button>
-        <button class="icon-button" aria-label="Menu" onClick=${() => openSheet({ type: "menu" })}>
+        <button class="icon-button" aria-label=${t("Menu")} onClick=${() => openSheet({ type: "menu" })}>
             <${Icon} name="more" />
         </button>
     </header>`;
@@ -476,7 +481,7 @@ function stopOnSecondEscape() {
     }
 
     escapedAt = Date.now();
-    notify("info", "Press Esc again to stop Pi.");
+    notify("info", t("Press Esc again to stop Pi."));
 }
 
 const altUp = () => delete document.documentElement.dataset.alt;
@@ -553,7 +558,7 @@ if (shared !== null) {
         (share) =>
             share
                 ? store.set({ sheet: { type: "share", share } })
-                : notify("error", "What was shared did not arrive. Share it again."),
-        () => notify("error", "What was shared could not be read. Share it again."),
+                : notify("error", t("What was shared did not arrive. Share it again.")),
+        () => notify("error", t("What was shared could not be read. Share it again.")),
     );
 }

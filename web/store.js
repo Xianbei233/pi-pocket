@@ -1,5 +1,6 @@
 // App state, the server connection, and API calls. Components read `store.state` and re-render on `store.subscribe`.
 import { onRoute, pushRoute } from "./back.js";
+import { currentLocale, setUiLocales, t } from "./i18n.js";
 
 /** A random id. crypto.randomUUID only exists on https and localhost pages; plain-http network addresses lack it. */
 export function uid() {
@@ -52,6 +53,8 @@ const emptyView = () => ({
 export const store = {
     state: {
         me: undefined, // undefined: unknown, null: signed out
+        uiLocale: "en",
+        uiLocaleRevision: 0,
         users: [],
         models: [],
         guard: null,
@@ -207,7 +210,7 @@ function applyChat(data) {
     const open = () => openSheet({ type: "chat" });
 
     if (fresh.length > 1) {
-        return notify("info", `${fresh.length} new chat messages`, open);
+        return notify("info", t("{{count}} new chat messages", { count: fresh.length }), open);
     }
 
     const [message] = fresh;
@@ -217,7 +220,7 @@ function applyChat(data) {
 
     notify(
         "info",
-        `${name}${mentioned ? " mentioned you" : ""}: ${text.length > 120 ? `${text.slice(0, 119)}…` : text}`,
+        `${name}${mentioned ? ` ${t("mentioned you")}` : ""}: ${text.length > 120 ? `${text.slice(0, 119)}…` : text}`,
         open,
     );
 }
@@ -384,16 +387,21 @@ export function stillMoving(moving, sessions) {
 
 /** What the server sends, by event name. Both transports deliver the same events. */
 const handlers = {
-    hello: (data) =>
+    hello: (data) => {
+        const uiLocale = setUiLocales(data.server?.uiLocales);
+
         store.set({
             me: data.user,
+            uiLocale,
+            uiLocaleRevision: store.state.uiLocaleRevision + 1,
             users: data.users,
             models: data.models,
             guard: data.guard,
             server: data.server,
             // This connection's id, which peek lists name (`peeks.js`). `GET /api/me` answers without one.
             ...(data.connection === undefined ? {} : { streamId: data.connection }),
-        }),
+        });
+    },
     sessions: (sessions) =>
         store.set((state) => ({
             sessions,
@@ -542,7 +550,8 @@ function streamEvents(query) {
         } catch (error) {
             if (error.status === 401) {
                 connection.close();
-                store.set({ me: null });
+                setUiLocales([]);
+                store.set({ me: null, uiLocale: currentLocale() });
 
                 return;
             }
@@ -595,7 +604,8 @@ function pollEvents(query) {
 
                 if (response.status === 401) {
                     stopped = true;
-                    store.set({ me: null });
+                    setUiLocales([]);
+                    store.set({ me: null, uiLocale: currentLocale() });
 
                     return;
                 }
@@ -675,7 +685,7 @@ function handleAuth(data) {
 
         if (data.step === "done") {
             if (data.ok) {
-                notify("info", `Signed in to ${data.providerId}.`);
+                notify("info", t("Signed in to {{provider}}.", { provider: data.providerId }));
             }
 
             return { auth: data.ok ? null : { ...flow, prompt: null, done: data } };
@@ -738,8 +748,12 @@ export async function start() {
     try {
         const hello = await api("me");
 
+        const uiLocale = setUiLocales(hello.server?.uiLocales);
+
         store.set({
             me: hello.user,
+            uiLocale,
+            uiLocaleRevision: store.state.uiLocaleRevision + 1,
             users: hello.users,
             models: hello.models,
             guard: hello.guard,
@@ -747,10 +761,15 @@ export async function start() {
         });
         connect();
     } catch (error) {
-        store.set({ me: error.status === 401 ? null : undefined });
+        if (error.status === 401) {
+            setUiLocales([]);
+            store.set({ me: null, uiLocale: currentLocale() });
+        } else {
+            store.set({ me: undefined });
+        }
 
         if (error.status !== 401) {
-            notify("error", `Server unreachable: ${error.message}`);
+            notify("error", `${t("Server unreachable: ")}${error.message}`);
             setTimeout(start, 3000);
         }
     }

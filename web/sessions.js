@@ -1,3 +1,4 @@
+import { t } from "./i18n.js";
 // The session list (sidebar, drawer, and home screen), the folded rail, and the order and archiving of sessions.
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { Avatar, initials } from "./avatar.js";
@@ -20,7 +21,7 @@ import { html, Icon, Keys, shortPath, Slide, timeAgo, usePresence, useSlide } fr
 
 /** The session list on its way: rows shaped like sessions, lit in turn. */
 function LoadingSessions() {
-    return html`<div role="status" aria-label="Loading sessions">
+    return html`<div role="status" aria-label=${t("Loading sessions")}>
         ${[72, 54, 64, 46, 58].map(
             (width, index) =>
                 html`<div
@@ -93,15 +94,21 @@ export async function setArchived(ids, archived, { undo = true } = {}) {
     const what =
         done.length === 1
             ? `“${title.length > 48 ? `${title.slice(0, 47)}…` : title}”`
-            : `${done.length} sessions`;
+            : t("{{count}} sessions", { count: done.length });
 
-    notify("info", `${archived ? "Archived" : "Unarchived"} ${what}. Tap to undo.`, async () => {
-        await setArchived(done, !archived, { undo: false });
+    notify(
+        "info",
+        t(archived ? "Archived {{what}}. Tap to undo." : "Unarchived {{what}}. Tap to undo.", {
+            what,
+        }),
+        async () => {
+            await setArchived(done, !archived, { undo: false });
 
-        if (left && store.state.conversationId === null) {
-            navigate(open);
-        }
-    });
+            if (left && store.state.conversationId === null) {
+                navigate(open);
+            }
+        },
+    );
 }
 
 /**
@@ -216,7 +223,7 @@ function SessionRow({ session, index, number, needle, selected, onPick, onSelect
         : session.waiting
           ? html`<span class="state-warn" title="Waiting for approval">!</span>`
           : session.busy
-            ? html`<span class="mini-sweep" title="Working"><i></i><i></i><i></i></span>`
+            ? html`<span class="mini-sweep" title=${t("Working")}><i></i><i></i><i></i></span>`
             : html`<span class="state-idle"></span>`;
     const people = collab()
         ? (session.people ?? []).filter((person) => person.id !== me?.id).slice(0, 4)
@@ -332,12 +339,6 @@ function groupsOf(shown, { tab, needle, home, pinned }) {
     return [...groups, ...byKey.values()];
 }
 
-const TABS = [
-    ["recent", "Recent"],
-    ["folders", "Folders"],
-    ["archived", "Archived"],
-];
-
 /**
  * What the full list searched for and how far it was scrolled, kept while the tab lives: on a phone the list goes when a
  * session opens, and back from the session shows it again as it was.
@@ -361,6 +362,11 @@ export function SessionList({ compact = false }) {
     const tabs = useRef(null);
     const needle = query.trim().toLowerCase();
     const archived = tab === "archived";
+    const tabsList = [
+        ["recent", t("Recent")],
+        ["folders", t("Folders")],
+        ["archived", t("Archived")],
+    ];
 
     const setQuery = (next) => {
         if (!compact) {
@@ -662,8 +668,8 @@ export function SessionList({ compact = false }) {
             <span class="brand">π <span>Pocket</span></span>
             <button
                 class="icon-button"
-                title="Launcher"
-                aria-label="Open the launcher"
+                title=${t("Launcher")}
+                aria-label=${t("Open the launcher")}
                 onClick=${() => store.set({ launcher: true, drawer: false })}
             >
                 <${Icon} name="command" size=${18} />
@@ -672,8 +678,8 @@ export function SessionList({ compact = false }) {
                 !compact &&
                 html`<button
                     class="icon-button sidebar-fold"
-                    title="Fold the sidebar"
-                    aria-label="Fold the sidebar"
+                    title=${t("Fold the sidebar")}
+                    aria-label=${t("Fold the sidebar")}
                     onClick=${() => setPrefs({ sidebar: "rail" })}
                 >
                     <${Icon} name="sidebar" size=${18} />
@@ -685,14 +691,14 @@ export function SessionList({ compact = false }) {
                     class="button primary small new-button"
                     onClick=${() => openSheet({ type: "cwd", mode: "new" })}
                 >
-                    <${Icon} name="plus" size=${16} /> New
+                    <${Icon} name="plus" size=${16} /> ${t("New")}
                 </button>`
             }
         </div>
         <label class="search">
             <${Icon} name="search" size=${16} />
             <input
-                placeholder="Search sessions"
+                placeholder=${t("Search sessions")}
                 value=${query}
                 onInput=${(event) => setQuery(event.currentTarget.value)}
                 onKeyDown=${(event) => {
@@ -709,14 +715,14 @@ export function SessionList({ compact = false }) {
                 query
                     ? html`<button
                         class="icon-button small"
-                        aria-label="Clear"
+                        aria-label=${t("Clear")}
                         onClick=${() => setQuery("")}
                     >
                         <${Icon} name="close" size=${14} />
                     </button>`
                     : html`<span
                         class="search-keys"
-                        title="Launcher"
+                        title=${t("Launcher")}
                         onClick=${(event) => {
                             event.preventDefault();
                             store.set({ launcher: true, drawer: false });
@@ -727,7 +733,7 @@ export function SessionList({ compact = false }) {
             }
         </label>
         <div class="session-tabs" role="tablist" ref=${tabs}>
-            ${TABS.map(
+            ${tabsList.map(
                 ([key, label]) => html`<button
                     role="tab"
                     aria-selected=${tab === key}
@@ -750,7 +756,7 @@ export function SessionList({ compact = false }) {
                 sessionsLoaded &&
                 shown.length === 0 &&
                 html`<div class="sessions-empty">
-                    ${archived ? "No archived sessions." : needle ? "No matches." : "No sessions yet. Start one with New."}
+                    ${t(archived ? "No archived sessions." : needle ? "No matches." : "No sessions yet. Start one with New.")}
                 </div>`
             }
             ${groups.map((group) => {
@@ -767,7 +773,7 @@ export function SessionList({ compact = false }) {
                                 onClick=${() => group.key !== "flat" && toggleGroup(group.key)}
                                 aria-expanded=${!isClosed}
                             >
-                                <span class="group-name">${group.label}</span>
+                                <span class="group-name">${group.key.startsWith("dir:") ? group.label : t(group.label)}</span>
                                 <span class="group-count">${group.rows.length}</span>
                                 ${group.key !== "flat" && html`<${Icon} name="down" size=${12} />`}
                             </button>`
@@ -802,14 +808,14 @@ export function SessionList({ compact = false }) {
                         onClick=${() => openSheet({ type: "running" })}
                     >
                         <${Icon} name="pulse" size=${16} />
-                        Running${busy > 0 && html`<span class="tile-count">${busy}</span>`}
+                        ${t("Running")}${busy > 0 && html`<span class="tile-count">${busy}</span>`}
                     </button>
                     <button
                         class="foot-tile"
-                        title="Model providers"
+                        title=${t("Model providers")}
                         onClick=${() => openSheet({ type: "providers" })}
                     >
-                        <${Icon} name="key" size=${16} /> Providers
+                        <${Icon} name="key" size=${16} /> ${t("Providers")}
                     </button>
                     ${
                         collab()
@@ -818,27 +824,27 @@ export function SessionList({ compact = false }) {
                                 title=${canStart ? "People and invites" : "People"}
                                 onClick=${() => openSheet({ type: "people" })}
                             >
-                                <${Icon} name="users" size=${16} /> People
+                                <${Icon} name="users" size=${16} /> ${t("People")}
                             </button>`
                             : html`<button
                                 class="foot-tile"
-                                title="Sign in another device"
+                                title=${t("Sign in another device")}
                                 onClick=${() => openSheet({ type: "invite" })}
                             >
-                                <${Icon} name="users" size=${16} /> Devices
+                                <${Icon} name="users" size=${16} /> ${t("Devices")}
                             </button>`
                     }
                     <button
                         class="foot-tile"
-                        title="Theme, tiling, motion"
+                        title=${t("Theme, tiling, motion")}
                         onClick=${() => openSheet({ type: "appearance" })}
                     >
-                        <${Icon} name="palette" size=${16} /> Theme
+                        <${Icon} name="palette" size=${16} /> ${t("Theme")}
                     </button>
                 </div>
                 ${
                     chosen.length > 0 &&
-                    html`<div class="select-bar" role="group" aria-label="Selected sessions">
+                    html`<div class="select-bar" role="group" aria-label=${t("Selected sessions")}>
                         <span class="select-count">
                             <b>${chosen.length}</b>
                             <span class="select-word"> selected</span>
@@ -857,8 +863,8 @@ export function SessionList({ compact = false }) {
                         }
                         <button
                             class="icon-button small"
-                            title="Clear the selection (Esc)"
-                            aria-label="Clear the selection"
+                            title=${t("Clear the selection (Esc)")}
+                            aria-label=${t("Clear the selection")}
                             onClick=${clearSelection}
                         >
                             <${Icon} name="close" size=${14} />
@@ -866,11 +872,11 @@ export function SessionList({ compact = false }) {
                     </div>`
                 }
             </div>
-            <button class="me-row" title="Your name" onClick=${() => openSheet({ type: "name" })}>
+            <button class="me-row" title=${t("Your name")} onClick=${() => openSheet({ type: "name" })}>
                 ${me && html`<${Avatar} person=${me} size=${22} />`}
                 <span class="me-name">${me?.name}</span>
                 <span class="me-role">
-                    ${me?.role === "owner" ? "owner" : me?.role === "viewer" ? "view only" : "guest"}
+                    ${t(me?.role === "owner" ? "owner" : me?.role === "viewer" ? "view only" : "guest")}
                 </span>
             </button>
         </div>
@@ -888,8 +894,8 @@ export function Rail() {
     return html`<div class="rail">
         <button
             class="rail-brand"
-            title="Unfold the sidebar"
-            aria-label="Unfold the sidebar"
+            title=${t("Unfold the sidebar")}
+            aria-label=${t("Unfold the sidebar")}
             onClick=${() => setPrefs({ sidebar: "open" })}
         >
             π
@@ -898,8 +904,8 @@ export function Rail() {
             canStart &&
             html`<button
                 class="icon-button"
-                title="New session"
-                aria-label="New session"
+                title=${t("New session")}
+                aria-label=${t("New session")}
                 onClick=${() => openSheet({ type: "cwd", mode: "new" })}
             >
                 <${Icon} name="plus" size=${18} />
@@ -907,8 +913,8 @@ export function Rail() {
         }
         <button
             class="icon-button"
-            title="Launcher"
-            aria-label="Open the launcher"
+            title=${t("Launcher")}
+            aria-label=${t("Open the launcher")}
             onClick=${() => store.set({ launcher: true })}
         >
             <${Icon} name="command" size=${18} />
@@ -931,22 +937,22 @@ export function Rail() {
         <div class="rail-foot">
             <button
                 class="icon-button"
-                title="Running now"
+                title=${t("Running now")}
                 onClick=${() => openSheet({ type: "running" })}
             >
                 <${Icon} name="pulse" size=${18} />
             </button>
             <button
                 class="icon-button"
-                title="Appearance"
+                title=${t("Appearance")}
                 onClick=${() => openSheet({ type: "appearance" })}
             >
                 <${Icon} name="palette" size=${18} />
             </button>
             <button
                 class="icon-button"
-                title="Unfold the sidebar"
-                aria-label="Unfold the sidebar"
+                title=${t("Unfold the sidebar")}
+                aria-label=${t("Unfold the sidebar")}
                 onClick=${() => setPrefs({ sidebar: "open" })}
             >
                 <${Icon} name="sidebar" size=${18} />
@@ -992,7 +998,7 @@ export function ResizeHandle() {
         class="resize-handle"
         role="separator"
         aria-orientation="vertical"
-        title="Drag to resize"
+        title=${t("Drag to resize")}
         onPointerDown=${start}
         onDblClick=${() => setPrefs({ sidebarWidth: 300 })}
     ></div>`;

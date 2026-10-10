@@ -1,3 +1,4 @@
+import { t } from "./i18n.js";
 // The message box: send, steer or queue while busy, attach files, mention files with @, run commands with !, recall
 // what was sent before (↑, Ctrl+R), fold long pastes, pick the model, stop.
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -60,7 +61,7 @@ function savePastes(id, pastes) {
             localStorage.setItem(pasteKey(id), JSON.stringify(pastes));
         }
     } catch {
-        notify("warning", "This browser has no room to keep the paste after a reload.");
+        notify("warning", t("This browser has no room to keep the paste after a reload."));
     }
 }
 
@@ -93,17 +94,17 @@ function DriverBar() {
             <span class="driver-label">🚗 You're driving</span>
             ${turns.asks.map(
                 (id) => html`<span class="driver-ask">
-                    ${name(id)} asks to drive <button class="link small" onClick=${() => run("handover", id)}>Hand over</button>
+                    ${name(id)} asks to drive <button class="link small" onClick=${() => run("handover", id)}>${t("Hand over")}</button>
                 </span>`,
             )}
             <span class="grow"></span>
             ${
                 others.length > 0 &&
                 html`<button class="link small" onClick=${() => setHanding(!handing)}>
-                    Hand over…
+                    ${t("Hand over…")}
                 </button>`
             }
-            <button class="link small" onClick=${() => run("release")}>Let go</button>
+            <button class="link small" onClick=${() => run("release")}>${t("Let go")}</button>
             ${
                 handing &&
                 html`<div class="driver-pick">
@@ -138,7 +139,7 @@ function DriverBar() {
         ${
             canTake &&
             html`<button class="button small primary" onClick=${() => run("claim")}>
-                Take the wheel
+                ${t("Take the wheel")}
             </button>`
         }
     </div>`;
@@ -157,20 +158,20 @@ function PlanBar({ blocked }) {
 
     return html`<div class="plan-bar">
         <span class="grow">
-            <strong>Plan mode.</strong> ${subagent ? "This subagent follows its session: it reads, and changes nothing." : "Pi reads and proposes; nothing changes until you approve."}
+            <strong>${t("Plan mode.")}</strong> ${subagent ? "This subagent follows its session: it reads, and changes nothing." : "Pi reads and proposes; nothing changes until you approve."}
         </span>
         ${
             !blocked &&
             !subagent &&
             html`<button class="link small" onClick=${() => attempt(() => actions.setPlan(false))}>
-                Turn off
+                ${t("Turn off")}
             </button>
             <button
                 class="button small primary"
                 disabled=${view.live.busy}
                 onClick=${() => attempt(actions.approvePlan)}
             >
-                Approve plan
+                ${t("Approve plan")}
             </button>`
         }
     </div>`;
@@ -435,7 +436,7 @@ export function Composer() {
         const command = full.replace(/^!!?/, "").trim();
 
         if (command === "") {
-            return notify("info", "Say which command to run, such as !git status.");
+            return notify("info", t("Say which command to run, such as !git status."));
         }
 
         setSending(true);
@@ -721,7 +722,7 @@ export function Composer() {
                         ),
                     ),
                 (error) => {
-                    notify("error", `Upload failed: ${error.message}`);
+                    notify("error", `${t("Upload failed: ")}${error.message}`);
 
                     if (preview) {
                         URL.revokeObjectURL(preview);
@@ -769,11 +770,11 @@ export function Composer() {
 
     const placeholder = busy
         ? steer
-            ? "Steer the current run…"
-            : "Queue a follow-up…"
+            ? t("Steer the current run…")
+            : t("Queue a follow-up…")
         : coarse
-          ? "Message Pi…"
-          : "Message Pi… (/ commands · @ files · ! shell)";
+          ? t("Message Pi…")
+          : t("Message Pi… (/ commands · @ files · ! shell)");
     const inbox = view.inbox ?? [];
     const { me, users } = store.state;
     const queuedBy = (item) =>
@@ -791,7 +792,7 @@ export function Composer() {
                     <strong>View only.</strong> You can read along, react, and chat with the people here.
                 </span>
                 <button class="button small" onClick=${() => openSheet({ type: "chat" })}>
-                    <${Icon} name="chat" size=${15} /> Chat
+                    <${Icon} name="chat" size=${15} /> ${t("Chat")}
                 </button>
             </div>
             <${StatusLine} />
@@ -822,7 +823,7 @@ export function Composer() {
                             (!blocked || item.by === me?.id) &&
                             html`<button
                                 class="icon-button small"
-                                aria-label="Withdraw"
+                                aria-label=${t("Withdraw")}
                                 onClick=${() => attempt(() => actions.withdraw(item.id))}
                             >
                                 <${Icon} name="close" size=${14} />
@@ -840,10 +841,10 @@ export function Composer() {
                 ? html`${
                       busy &&
                       html`<div class="composer-row stop-only">
-                          <span class="muted small grow">Pi is working…</span>
+                          <span class="muted small grow">${t("Pi is working…")}</span>
                           <button
                               class="round stop"
-                              aria-label="Stop"
+                              aria-label=${t("Stop")}
                               onClick=${() => attempt(actions.abort)}
                           >
                               <${Icon} name="stop" size=${16} />
@@ -855,11 +856,11 @@ export function Composer() {
                       html`<div
                           class="commands history-options"
                           role="listbox"
-                          aria-label="Sent before"
+                          aria-label=${t("Sent before")}
                           ref=${list}
                       >
                           <div class="file-note">
-                              Sent before${text.trim() ? ` with “${text.trim()}”` : ""} · Enter puts it in the box · Esc closes
+                              ${t("Sent before")}${text.trim() ? ` with “${text.trim()}”` : ""} · Enter puts it in the box · Esc closes
                           </div>
                           ${recalled.map(
                               (each) => html`<button
@@ -925,7 +926,7 @@ export function Composer() {
                     html`<div
                         class="commands file-options"
                         role="listbox"
-                        aria-label="Files"
+                        aria-label=${t("Files")}
                         ref=${list}
                     >
                         ${matches.map(
@@ -951,7 +952,7 @@ export function Composer() {
                                 </span>
                             </button>`,
                         )}
-                        ${matches.length === 0 && html`<div class="file-note">Finding files…</div>`}
+                        ${matches.length === 0 && html`<div class="file-note">${t("Finding files…")}</div>`}
                         ${
                             found.truncated &&
                             html`<div class="file-note">
@@ -1068,7 +1069,7 @@ export function Composer() {
                         <${PlacesButton} />
                         <button
                             class="icon-button"
-                            aria-label="Attach files"
+                            aria-label=${t("Attach files")}
                             onClick=${() => picker.current?.click()}
                         >
                             <${Icon} name="clip" />
@@ -1095,10 +1096,10 @@ export function Composer() {
                             view.conversation?.kind !== "subagent" &&
                             html`<button
                                 class=${`chip toggle ${view.plan?.on ? "on" : ""}`}
-                                title="Plan mode: Pi reads and proposes, and changes nothing until you approve"
+                                title=${`${t("Plan mode")}: ${t("Pi reads and proposes; nothing changes until you approve.")}`}
                                 onClick=${() => attempt(() => actions.setPlan(!view.plan?.on))}
                             >
-                                Plan
+                                ${t("Plan")}
                             </button>`
                         }
                         ${
@@ -1108,7 +1109,7 @@ export function Composer() {
                                 onClick=${() => setSteer(!steer)}
                                 title="Steer joins the running work; off queues a follow-up"
                             >
-                                Steer
+                                ${t("Steer")}
                             </button>`
                         }
                         <span class="grow"></span>
@@ -1116,7 +1117,7 @@ export function Composer() {
                             busy &&
                             html`<button
                                 class="round stop"
-                                aria-label="Stop"
+                                aria-label=${t("Stop")}
                                 onClick=${() => attempt(actions.abort)}
                             >
                                 <${Icon} name="stop" size=${16} />
@@ -1126,7 +1127,7 @@ export function Composer() {
                             (!busy || text.trim() !== "" || files.length > 0) &&
                             html`<button
                                 class="round send"
-                                aria-label="Send"
+                                aria-label=${t("Send")}
                                 disabled=${!canSend}
                                 onClick=${send}
                             >
@@ -1156,8 +1157,8 @@ function PlacesButton() {
 
     return html`<button
         class="icon-button places-button badge-host"
-        aria-label="Places: Files, Changes, Browser, and more"
-        title="Places (or swipe up here)"
+        aria-label=${t("Places: Files, Changes, Browser, and more")}
+        title=${t("Places (or swipe up here)")}
         onClick=${() => openSheet({ type: "places" })}
     >
         <${Icon} name="grid" />

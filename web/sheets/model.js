@@ -1,3 +1,4 @@
+import { t } from "../i18n.js";
 // The model picker: a menu under the model chip, searchable once there are many models.
 import { useEffect, useRef, useState } from "preact/hooks";
 import { actions, attempt, closeSheet, openSheet, store } from "../store.js";
@@ -112,14 +113,14 @@ export function ModelPicker() {
             style=${anchorStyle(anchor)}
             ref=${box}
             role="dialog"
-            aria-label="Model"
+            aria-label=${t("Model")}
             tabindex="-1"
             onKeyDown=${onKeyDown}
         >
             <header class="pop-menu-head">
-                <span>Model</span>
+                <span>${t("Model")}</span>
                 <button class="pop-menu-link" onClick=${() => openSheet({ type: "providers" })}>
-                    <${Icon} name="key" size=${13} /> Providers
+                    <${Icon} name="key" size=${13} /> ${t("Providers")}
                 </button>
             </header>
             ${
@@ -128,7 +129,7 @@ export function ModelPicker() {
                     <${Icon} name="search" size=${15} />
                     <input
                         ref=${search}
-                        placeholder="Search models"
+                        placeholder=${t("Search models")}
                         value=${query}
                         onInput=${(event) => {
                             setQuery(event.currentTarget.value);
@@ -137,17 +138,17 @@ export function ModelPicker() {
                     />
                 </label>`
             }
-            <div class="pop-menu-list" ref=${list} role="listbox" aria-label="Models">
+            <div class="pop-menu-list" ref=${list} role="listbox" aria-label=${t("Models")}>
                 ${
                     models.length === 0 &&
                     html`<p class="muted pop-menu-note">
-                        No models are available. Add a provider first.
+                        ${t("No models are available. Add a provider first.")}
                     </p>`
                 }
                 ${
                     models.length > 0 &&
                     shown.length === 0 &&
-                    html`<p class="muted pop-menu-note">No model matches “${query.trim()}”.</p>`
+                    html`<p class="muted pop-menu-note">${t("No model matches “")}${query.trim()}”.</p>`
                 }
                 ${shown.map(
                     (model, index) => html`<button
@@ -170,8 +171,8 @@ export function ModelPicker() {
             ${
                 agent?.reasoning &&
                 html`<div class="pop-menu-foot">
-                    <div class="label">Thinking</div>
-                    <div class="segmented model-levels" role="radiogroup" aria-label="Thinking">
+                    <div class="label">${t("Thinking")}</div>
+                    <div class="segmented model-levels" role="radiogroup" aria-label=${t("Thinking")}>
                         ${levels.map(
                             (level) =>
                                 html`<button
